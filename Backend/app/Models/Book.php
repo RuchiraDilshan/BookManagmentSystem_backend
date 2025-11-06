@@ -9,10 +9,15 @@ class Book extends Modal
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'author', 'book_category_id'];
+    protected $fillable = ['title', 'author','price','stock' ,'book_category_id'];
 
     public function category()
     {
         return $this->belongsTo(BookCategory::class, 'book_category_id');
+    }
+
+    public function borrowRecords()
+    {
+        return $this->hasMany(BorrowRecord::class, 'book_id');
     }
 }

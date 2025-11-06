@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\seeders;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 
@@ -21,6 +21,6 @@ class BookCategorySeeder extends Seeder
             ['name' => 'Biography', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        DB::table('book_categories')->insert($categories);
+
     }
 }

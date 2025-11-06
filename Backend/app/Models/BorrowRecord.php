@@ -9,7 +9,7 @@ class BorrowRecord extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'book_id', 'borrowed_at', 'returned_at'];
+    protected $fillable = ['user_id', 'book_id', 'type','event_date', 'notes'];
 
     public function user()
     {

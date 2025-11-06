@@ -12,8 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('book_id')->constrained('books')->onDelete('cascade');
-            $table->date('borrowed_at')->nullable();
-            $table->date('returned_at')->nullable();
+            $table->enum('typre', ['borrow', 'return']);
+            $table->timestamp('event_date')->useCurrent();
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }

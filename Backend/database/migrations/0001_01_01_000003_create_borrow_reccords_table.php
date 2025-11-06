@@ -6,20 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    public function up():void
     {
         Schema::create('borrow_records', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users_simple')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('book_id')->constrained('books')->onDelete('cascade');
-            $table->enum('type',['borrow','return']); // to borrow or return
-            $table->timestamp('event_date')->useCurrent();
-            $table->text('notes')->nullable();
+            $table->date('borrowed_at')->nullable();
+            $table->date('returned_at')->nullable();
             $table->timestamps();
         });
     }
 
-    public function down()
+    public function down():void
     {
         Schema::dropIfExists('borrow_records');
     }

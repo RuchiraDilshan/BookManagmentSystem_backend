@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('book_id')->constrained('books')->onDelete('cascade');
-            $table->enum('typre', ['borrow', 'return']);
+            $table->enum('type', ['borrow', 'return']);
             $table->timestamp('event_date')->useCurrent();
             $table->text('notes')->nullable();
             $table->timestamps();

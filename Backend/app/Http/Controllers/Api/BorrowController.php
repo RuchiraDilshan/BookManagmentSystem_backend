@@ -12,6 +12,13 @@ use Illuminate\Validation\Rule;
 
 class BorrowController extends Controller
 {
+
+    // get all borrow records
+    public function index()
+    {
+        $records = BorrowRecord::with('user', 'book')->orderByDesc('event_date')->get();
+        return response()->json($records);
+    }
     //to borrow a book
     public function borrow(Request $request)
     {

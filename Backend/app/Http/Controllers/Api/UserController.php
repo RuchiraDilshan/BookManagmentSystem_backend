@@ -23,7 +23,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6',
+            'phone_number' => 'required|string|max:15',
         ]);
 
 
@@ -31,7 +31,7 @@ class UserController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'phone_number' => $request->phone_number,
         ]);
 
         return response()->json($user, 201);

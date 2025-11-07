@@ -67,7 +67,7 @@ class BorrowController extends Controller
             BorrowRecord::create([
                 'user_id' => $request->user_id,
                 'book_id' => $request->book_id,
-                'type' => 'borrow', // ✅ Use your actual columns
+                'type' => 'borrow',
     'event_date' => now(),
     'notes' => 'Book borrowed'
             ]);

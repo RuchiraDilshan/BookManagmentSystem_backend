@@ -18,11 +18,5 @@ class DatabaseSeeder extends Seeder
         $this->call([
             BookCategorySeeder::class,
         ]);
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'phone_number' => '123-456-7890',
-        ]);
     }
 }

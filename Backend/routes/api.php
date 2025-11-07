@@ -24,6 +24,7 @@ Route::get('/users/{id}', [UserController::class, 'show']);
 Route::get('/borrow-records', [BorrowController::class, 'index']);
 Route::get('/borrow-records/current', [BorrowController::class, 'currentBorrows']);
 Route::get('/borrow-records/history', [BorrowController::class, 'borrowHistory']);
+Route::get('/borrow-records/user/{userId}/current', [BorrowController::class, 'userCurrentBorrows']);
 Route::post('/borrow-records/borrow', [BorrowController::class, 'borrow']);
 Route::post('/borrow-records/return', [BorrowController::class, 'returnBook']);
 Route::post('/borrow-records/{id}/return', [BorrowController::class, 'returnBook']);

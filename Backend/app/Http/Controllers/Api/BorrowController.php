@@ -37,23 +37,13 @@ class BorrowController extends Controller
             }
 
             // to check user already borrowed the book and not returned yet
-            $existingBorrow = BorrowRecord::where('user_id', $request->user_id)
-    ->where('book_id', $request->book_id)
-    ->where('type', 'borrow')
-    ->latest()
-    ->first();
+            $latestRecord = BorrowRecord::where('user_id', $request->user_id)
+                ->where('book_id', $request->book_id)
+                ->latest()
+                ->first();
 
-            if ($existingBorrow) {
-
-                $latestReturn = BorrowRecord::where('user_id', $request->user_id)
-        ->where('book_id', $request->book_id)
-        ->where('type', 'return')
-        ->where('event_date', '>=', $existingBorrow->event_date)
-        ->first();
-
-              if (!$latestReturn) {
-        return response()->json(['message' => 'User has already borrowed this book and not returned yet'], 400);
-    }
+            if ($latestRecord && $latestRecord->type === 'borrow') {
+                return response()->json(['message' => 'User has already borrowed this book and not returned yet'], 400);
             }
 
             // to decrease stock
@@ -86,16 +76,18 @@ class BorrowController extends Controller
             $record = BorrowRecord::lockForUpdate()->findOrFail($borrowRecordId);
 
             if ($record->type !== 'borrow') {
-    return response()->json(['message' => 'This is not a borrow record'], 400);
-}
-$existingReturn = BorrowRecord::where('user_id', $record->user_id)
-    ->where('book_id', $record->book_id)
-    ->where('type', 'return')
-    ->first();
+                return response()->json(['message' => 'This is not a borrow record'], 400);
+            }
 
-if ($existingReturn) {
-    return response()->json(['message' => 'Book has already been returned'], 400);
-}
+            // Check if this borrow record has already been returned
+            $latestRecord = BorrowRecord::where('user_id', $record->user_id)
+                ->where('book_id', $record->book_id)
+                ->latest()
+                ->first();
+
+            if ($latestRecord && $latestRecord->type === 'return') {
+                return response()->json(['message' => 'Book has already been returned'], 400);
+            }
 
 
 
@@ -104,7 +96,7 @@ if ($existingReturn) {
             $book->stock = $book->stock + 1;
             $book->save();
 
-            BorrowRecord::create([
+            $returnRecord = BorrowRecord::create([
     'user_id' => $record->user_id,
     'book_id' => $record->book_id,
     'type' => 'return',
@@ -112,7 +104,7 @@ if ($existingReturn) {
     'notes' => 'Book returned'
 ]);
 
-             return response()->json($record->load('user','book'));
+             return response()->json($returnRecord->load('user','book'));
 
         });
 
@@ -126,21 +118,20 @@ if ($existingReturn) {
         ]);
 
         return DB::transaction(function () use ($request) {
-            $borrowRecord = BorrowRecord::where('user_id', $request->user_id)
-    ->where('book_id', $request->book_id)
-    ->where('type', 'borrow')
-    ->latest()
-    ->first();
+            $latestRecord = BorrowRecord::where('user_id', $request->user_id)
+                ->where('book_id', $request->book_id)
+                ->latest()
+                ->first();
 
-            if (!$borrowRecord) {
+            if (!$latestRecord || $latestRecord->type !== 'borrow') {
                 return response()->json(['message' => 'No active borrow record found for this user and book'], 400);
             }
 
-            $book = Book::lockForUpdate()->findOrFail($borrowRecord->book_id);
+            $book = Book::lockForUpdate()->findOrFail($latestRecord->book_id);
             $book->stock = $book->stock + 1;
             $book->save();
 
-            BorrowRecord::create([
+            $returnRecord = BorrowRecord::create([
     'user_id' => $request->user_id,
     'book_id' => $request->book_id,
     'type' => 'return',
@@ -148,7 +139,7 @@ if ($existingReturn) {
     'notes' => 'Book returned'
 ]);
 
-            return response()->json($borrowRecord->load('user','book'));
+            return response()->json($returnRecord->load('user','book'));
         });
     }
 
@@ -157,20 +148,24 @@ if ($existingReturn) {
 // to get current borrow records
 public function currentBorrows()
 {
-    $latestBorrows = BorrowRecord::where('type', 'borrow')
-        ->whereNotExists(function ($query) {
-            $query->select(DB::raw(1))
-                ->from('borrow_records as br2')
-                ->whereRaw('br2.user_id = borrow_records.user_id')
-                ->whereRaw('br2.book_id = borrow_records.book_id')
-                ->where('br2.type', 'return')
-                ->whereRaw('br2.event_date >= borrow_records.event_date');
-        })
+    $borrowRecords = BorrowRecord::where('type', 'borrow')
         ->with('user', 'book')
-        ->orderByDesc('event_date')
         ->get();
 
-    return response()->json($latestBorrows);
+    $activeBorrows = collect();
+
+    foreach ($borrowRecords as $record) {
+        $latestRecord = BorrowRecord::where('user_id', $record->user_id)
+            ->where('book_id', $record->book_id)
+            ->latest()
+            ->first();
+
+        if ($latestRecord && $latestRecord->type === 'borrow') {
+            $activeBorrows->push($record);
+        }
+    }
+
+    return response()->json($activeBorrows->sortByDesc('event_date')->values());
 }
 
 // to get borrow history
@@ -182,6 +177,25 @@ public function borrowHistory()
         ->orderByDesc('event_date')
         ->get();
     return response()->json($records);
+}
+
+// to get current borrows for a specific user
+public function userCurrentBorrows($userId)
+{
+    // Get the latest record for each book the user has interacted with
+    $latestRecords = BorrowRecord::where('user_id', $userId)
+        ->selectRaw('MAX(id) as id')
+        ->groupBy('user_id', 'book_id')
+        ->get()
+        ->pluck('id');
+
+    $borrowRecords = BorrowRecord::whereIn('id', $latestRecords)
+        ->where('type', 'borrow')
+        ->with('user', 'book')
+        ->orderByDesc('event_date')
+        ->get();
+
+    return response()->json($borrowRecords);
 }
 }
 
